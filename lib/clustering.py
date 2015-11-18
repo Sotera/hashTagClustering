@@ -1,3 +1,4 @@
+import json
 import pytz
 from datetime import datetime, timedelta
 
@@ -9,12 +10,13 @@ def utc_to_local(utc_dt):
     return local_dt.replace(microsecond=utc_dt.microsecond)
 
 class ScoreRecord:
-    def __init__(self, record):
-        self.lat = record.lat
-        self.lon = record.lon
-        self.text = record.text
-        self.username = record.user
-        self.dt = utc_to_local(record.dt)
+    def __init__(self, json_data):
+        record = json.loads(json_data)
+        self.lat = record["geo"]["coordinates"][0]
+        self.lon = record["geo"]["coordinates"][1]
+        self.text = record["text"]
+        self.username = ["user"]["screen_name"]
+        self.dt = utc_to_local(datetime.strptime(record["created_at"],'%a %b %d %H:%M:%S +0000 %Y'))
         self.img = record.img
         self.cluster = -1
 

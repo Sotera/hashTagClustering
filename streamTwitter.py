@@ -3,6 +3,7 @@ import oauth2 as oauth
 import urllib2 as urllib
 import datetime
 
+
 def getCredentials():
     #you'll need to get these by registering for your own twitter developer account
     dict_llaves = json.load(open("private/keyFile.json"))
