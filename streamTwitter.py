@@ -47,17 +47,18 @@ def main():
     response = twitterreq(oauth_token, oauth_consumer, url, http_method, pars)
 
     for line in response:
-        diff = datetime.datetime.now() - current_block
+        now = datetime.datetime.now()
+        diff = now - current_block
         if diff.seconds > 900:
             out_file.close()
-
-
+            current_block = now
+            out_file = open("./raw_tweet_data/"+str(current_block.date())+"_"+str(current_block.time())+".json","w")
         try:
             dic_line = json.loads(line)
             if dic_line["geo"] != None and len(dic_line["entities"]["hashtags"])!=0:
-                out_file.write(line.strip())
+                out_file.write(line.strip()+"\n")
         except:
             continue
 
 if __name__ == '__main__':
-  main()
+    main()
