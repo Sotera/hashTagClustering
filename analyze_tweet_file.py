@@ -2,7 +2,7 @@ import os
 import sys
 import elasticsearch
 sys.path.insert(0, './lib/')
-from clustering import ScoreRecord, ScoreBin
+from clustering import ScoreRecord, ScoreBin, assign_to_cluster
 
 def analyze_recent(tweet_file_path, es_url=None, tag_blacklist=[]):
     es = None
@@ -39,6 +39,15 @@ def analyze_recent(tweet_file_path, es_url=None, tag_blacklist=[]):
                 sr.write_to_es("jag_hc2_documents","post",es)
             continue
 
+        #associate querries with the existing hashtag list
+        first = True
+        tag_bin = None
+        for entry in lst_rec:
+            if first:
+                first = False
+                tag_bin = ScoreBin(entry)
+            else:
+                tag_bin.add_record(entry)
         if count > 0:
             #query ES to get previous entries with the same tags from the last 4 hours
             print "Query ES for tag"
@@ -51,15 +60,41 @@ def analyze_recent(tweet_file_path, es_url=None, tag_blacklist=[]):
                             "tags": tag
                         }
                     },
+                    "filter": {
+                        "bool":{
+                            "must" :[
+                                {
+                                    "range": {
+                                        "post_date":{
+                                            "gte" : "2014-10-01",
+                                            "lte" : "2014-10-31"
+                                         }
+                                    }
+                                }
+                            ]
+                        }
+                    }
                 }\
             )
-            old_records = []
             for hit in res["hits"]["hits"]:
                 sr = ScoreRecord(hit, data_type=1)
-                old_records.append(sr)
+                tag_bin.add_record(sr)
 
-
-        #associate querries with the existing hashtag list
         #perform clustering on larger list
-        #execute steps on case based list
+        tag_bin.determine_cluster(0.001, 5)
 
+        #execute steps on case based list
+        # Case 0 - No clusters found, simply addd new entries to documents index
+        if tag_bin.n_clusters == 0:
+            for entry in lst_rec:
+                entry.write_to_es("jag_hc2_documents","post",es)
+        else:
+            for c_num, c_dat in tag_bin.clusters:
+                # Now to determine if the found clusters existed before
+                # 3 cases
+                # Case 1: new cluster found
+                if len(c_dat["cluster_ids"]) == 1 and "" in c_dat["cluster_ids"]:
+
+                # Case 2: new entries belongs to existing cluster (& possibly extends cluster to bring in new entries)
+
+                # Case 3: new entries extend existing clusters, causing 2 to merge

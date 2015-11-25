@@ -1,7 +1,6 @@
 import json
 import pytz
 import re
-import elasticsearch
 from datetime import datetime, timedelta
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
@@ -32,7 +31,7 @@ def text_to_hashtags(caption):
             continue
     return list(ret_list)
 
-def assignToCluster(recordList, epsilon, n_min):
+def assign_to_cluster(recordList, epsilon, n_min):
     lalo = []
     for line in recordList:
         lalo.append([line.lon, line.lat])
@@ -56,6 +55,7 @@ class ScoreRecord:
             self.text = record["text"]
             self.username = record["user"]["screen_name"]
             self.tags = text_to_hashtags(record["text"])
+            self.indexed_at = None
             self.dt = utc_to_local(datetime.strptime(record["created_at"],'%a %b %d %H:%M:%S +0000 %Y'))
             self.cluster = -1
             self.cluster_ind = ""
@@ -67,23 +67,42 @@ class ScoreRecord:
             self.text = d_rec["caption"]
             self.username = d_rec["user"]
             self.tags = d_rec["tags"]
+            self.indexed_at = d_rec["indexedDate"]
             self.dt = datetime.strptime(d_rec["created_at"],"%Y-%d-%mT%H:%M:%SZ")
             self.cluster = -1
             self.cluster_ind = d_rec["cluster"]
 
     def toDict(self):
-        obj = {
-            'id': self.id,
-            'user': self.username,
-            'caption': self.text,
-            'tags':self.tags,
-            'post_date': str(self.dt.date())+"T"+str(self.dt.hour)+":"+str(self.dt.minute)+":"+str(self.dt.second)+"Z",
-            'location':{
-                "type":"point",
-                "coordinates":[self.lon, self.lat]
-            },
-            "cluster":self.cluster_ind
-        }
+        now = datetime.now()
+        obj = None
+        if self.indexed_at == None:
+            obj = {
+                'id': self.id,
+                'user': self.username,
+                'caption': self.text,
+                'tags':self.tags,
+                'indexedDate': str(now.date())+"T"+str(now.hour)+":"+str(now.minute)+":"+str(now.second)+"Z",
+                'post_date': str(self.dt.date())+"T"+str(self.dt.hour)+":"+str(self.dt.minute)+":"+str(self.dt.second)+"Z",
+                'location':{
+                    "type":"point",
+                    "coordinates":[self.lon, self.lat]
+                },
+                "cluster":self.cluster_ind
+            }
+        else:
+            obj = {
+                'id': self.id,
+                'user': self.username,
+                'caption': self.text,
+                'tags':self.tags,
+                'indexedDate': str(self.indexed_at.date())+"T"+str(self.indexed_at.hour)+":"+str(self.indexed_at.minute)+":"+str(self.indexed_at.second)+"Z",
+                'post_date': str(self.dt.date())+"T"+str(self.dt.hour)+":"+str(self.dt.minute)+":"+str(self.dt.second)+"Z",
+                'location':{
+                    "type":"point",
+                    "coordinates":[self.lon, self.lat]
+                },
+                "cluster":self.cluster_ind
+            }
         return obj
 
     def write_to_es(self, es_index, es_doc_type, es):
@@ -97,18 +116,18 @@ class ScoreBin:
         self.users = set([])
         self.records = []
         self.n_clusters = -1
-        self.clusters = []
+        self.clusters = {}
         if record is not None:
             self.records.append(record)
             self.users.add(record.username)
 
-    def addRecord(self, record):
+    def add_record(self, record):
         self.records.append(record)
         self.users.add(record.username)
         #if record.dt < self.dt:
         #    self.dt = record.dt
 
-    def toDict(self):
+    def to_dict(self):
         return {
             'date': str(self.dt.date()),
             'datetime': str(self.dt),
@@ -119,7 +138,15 @@ class ScoreBin:
         }
 
     def determine_clusters(self, epsilon, n_min):
-        assignToCluster(self.records, epsilon, n_min)
-        #clustered_recs = filter(lambda x: x.cluster != -1, self.records)
-        #cluster_nums = set()
-        #for record in self.records:
+        assign_to_cluster(self.records, epsilon, n_min)
+        clustered_recs = filter(lambda x: x.cluster != -1, self.records)
+        for record in clustered_recs:
+            k = str(record.cluster)
+            if k in self.clusters.keys():
+                self.clusters[k]["users"].add(record.username)
+                self.clusters[k]["cluster_ids"].add(record.cluster_ind)
+            else
+                self.clusters[k] = {}
+                self.clusters[k]["users"] = set([record.username])
+                self.clusters[k]["cluster_ids"] = set([record.cluster_ind])
+        self.n_clusters = len(self.clusters.keys())
