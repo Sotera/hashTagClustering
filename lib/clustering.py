@@ -59,6 +59,17 @@ class ScoreRecord:
             self.dt = utc_to_local(datetime.strptime(record["created_at"],'%a %b %d %H:%M:%S +0000 %Y'))
             self.cluster = -1
             self.cluster_ind = ""
+        elif data_type==1:
+            d_rec = json_data["_source"]
+            self.id = d_rec["id"]
+            self.lat = d_rec["location"]["coordinates"][1]
+            self.lon = d_rec["location"]["coordinates"][0]
+            self.text = d_rec["caption"]
+            self.username = d_rec["user"]
+            self.tags = d_rec["tags"]
+            self.dt = datetime.strptime(d_rec["created_at"],"%Y-%d-%mT%H:%M:%SZ")
+            self.cluster = -1
+            self.cluster_ind = d_rec["cluster"]
 
     def toDict(self):
         obj = {
@@ -70,7 +81,8 @@ class ScoreRecord:
             'location':{
                 "type":"point",
                 "coordinates":[self.lon, self.lat]
-            }
+            },
+            "cluster":self.cluster_ind
         }
         return obj
 

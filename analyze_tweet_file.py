@@ -4,7 +4,7 @@ import elasticsearch
 sys.path.insert(0, './lib/')
 from clustering import ScoreRecord, ScoreBin
 
-def analyze_recent(tweet_file_path, es_url=None):
+def analyze_recent(tweet_file_path, es_url=None, tag_blacklist=[]):
     es = None
     if es_url == None:
         es = elasticsearch.Elasticsearch()
@@ -23,17 +23,42 @@ def analyze_recent(tweet_file_path, es_url=None):
                     new_records[tag].append(sr)
                 else:
                     new_records[tag] = [sr]
+        os.rename(tweet_file_path+"/"+file, tweet_file_path+"/analyzed/"+file)
         break
 
-    for tag, lst_rec in new_records.keys():
-        print "Getting data for tag: ", tag
+    print len(new_records.keys())
+
+    for tag, lst_rec in new_records.iteritems():
+        print "Getting data for tag: ", tag,
         count = es.count(index="jag_hc2_documents", doc_type="post", q="tags:"+tag)["count"]
         #test if there is enough entries for clustering
-        if (count+len(lst_rec))<5:
+        n_entries = count+len(lst_rec)
+        if n_entries<5:
+            print tag, "has only", n_entries, "entries (insufficient for clustering)"
             for sr in lst_rec:
                 sr.write_to_es("jag_hc2_documents","post",es)
             continue
-        #query ES to get previous entries with the same tags from the last 8 hours
+
+        if count > 0:
+            #query ES to get previous entries with the same tags from the last 4 hours
+            print "Query ES for tag"
+            res = es.search(\
+                index="jag_hc2_documents", \
+                doc_type="post", \
+                body={
+                    "query": {
+                        "match":{
+                            "tags": tag
+                        }
+                    },
+                }\
+            )
+            old_records = []
+            for hit in res["hits"]["hits"]:
+                sr = ScoreRecord(hit, data_type=1)
+                old_records.append(sr)
+
+
         #associate querries with the existing hashtag list
         #perform clustering on larger list
         #execute steps on case based list
