@@ -18,7 +18,7 @@ def create_index(es_url=None, delete_old=False):
         body = '''{
             "settings" : {
                 "number_of_shards" : 3,
-                "number_of_replicas" : 2
+                "number_of_replicas" : 1
             },
             "mappings": {
                 "post" : {
@@ -44,16 +44,16 @@ def create_index(es_url=None, delete_old=False):
         body = '''{
             "settings" : {
                 "number_of_shards" : 3,
-                "number_of_replicas" : 2
+                "number_of_replicas" : 1
             },
             "mappings": {
                 "post" : {
                     "properties": {
-                        "uuid" : {"type" : "string", "index" : "not_analyzed"},
                         "tag" : {"type" : "string", "null_value" : "na"},
                         "post_date" : {"type" : "date"},
-                        "indexedDate" : {"type" : "date"},
+                        "indexed_date" : {"type" : "date"},
                         "num_posts" : {"type" :  "integer"},
+                        "num_users" : {"type" : "integer"},
                         "location": {
                                      "type": "geo_shape",
                                      "tree": "quadtree",
