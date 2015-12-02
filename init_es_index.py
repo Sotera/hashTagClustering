@@ -33,7 +33,7 @@ def create_index(es_url=None, delete_old=False):
                             "tree": "quadtree",
                             "precision": "1m"
                         },
-                        "cluster": {"type": "string", "index" : "not_analyzed"}
+                        "cluster": {"type": "string", "index": "not_analyzed"}
                     }
                 }
             }

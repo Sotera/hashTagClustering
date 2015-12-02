@@ -2,7 +2,8 @@ import json
 import oauth2 as oauth
 import urllib2 as urllib
 import datetime
-
+import os
+from math import sqrt
 
 def getCredentials():
     #you'll need to get these by registering for your own twitter developer account
@@ -11,7 +12,6 @@ def getCredentials():
     api_secret = dict_llaves["consumer_secret"]
     access_token_key = dict_llaves["access_token"]
     access_token_secret = dict_llaves["access_secret"]
-
     oauth_token    = oauth.Token(key=access_token_key, secret=access_token_secret)
     oauth_consumer = oauth.Consumer(key=api_key, secret=api_secret)
     return (oauth_token, oauth_consumer)
@@ -20,7 +20,6 @@ def twitterreq(oauth_token, oauth_consumer, url, http_method, parameters):
     http_handler  = urllib.HTTPHandler(debuglevel=0)
     https_handler = urllib.HTTPSHandler(debuglevel=0)
     signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
-
     req = oauth.Request.from_consumer_and_token(oauth_consumer, token=oauth_token, http_method=http_method, http_url=url, parameters=parameters)
     req.sign_request(signature_method_hmac_sha1, oauth_consumer, oauth_token)
     headers = req.to_header()
@@ -40,24 +39,35 @@ def main():
 
     http_method = "GET"
 
-    url = "https://stream.twitter.com/1.1/statuses/filter.json?track=MakeAmericaMoreAmerican&locations=-80.477909,25.592786,-80.071144,26.044704"
+    url = "https://stream.twitter.com/1.1/statuses/filter.json?track=MakeAmericaMoreAmerican&locations=-88.195284,41.562522,-87.507085,42.136065"
 
     pars = []
     current_block = datetime.datetime.now()
-    out_file = open("./raw_tweet_data/"+str(current_block.date())+"_"+str(current_block.time())+".json","w")
+    current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
+    out_file = open("./raw_tweet_data/live_stream/"+current_string,"w")
     response = twitterreq(oauth_token, oauth_consumer, url, http_method, pars)
 
     for line in response:
         now = datetime.datetime.now()
         diff = now - current_block
-        if diff.seconds > 900:
+        if diff.seconds > 180:
             out_file.close()
+            os.rename("raw_tweet_data/live_stream/"+current_string, "raw_tweet_data/"+current_string)
             current_block = now
-            out_file = open("./raw_tweet_data/"+str(current_block.date())+"_"+str(current_block.time())+".json","w")
+            current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
+            out_file = open("./raw_tweet_data/live_stream/"+current_string,"w")
         try:
             dic_line = json.loads(line)
-            if dic_line["geo"] != None and len(dic_line["entities"]["hashtags"])!=0:
+            if (dic_line["geo"] is not None or dic_line["coordinates"] is not None) and len(dic_line["entities"]["hashtags"])!=0:
                 out_file.write(line.strip()+"\n")
+            else:
+                print "***"
+                print "Place:\n", dic_line["place"]
+                if dic_line["place"] is not None:
+                    if dic_line["place"]["bounding_box"] is not None:
+                        coords = dic_line["place"]["bounding_box"]["coordinates"][0]
+                        diameter = sqrt((coords[3][0]-coords[0][0])*(coords[3][0]-coords[0][0])+(coords[3][1]-coords[0][1])*(coords[3][1]-coords[0][1]))
+                        print "\tDIAMETER:", diameter
         except:
             continue
 
