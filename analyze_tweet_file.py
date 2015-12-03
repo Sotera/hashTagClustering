@@ -92,7 +92,7 @@ def analyze_recent(tweet_file_path, es_url=None, tag_blacklist=set()):
 
 def main():
     file_path = "raw_tweet_data"
-    tag_blacklist = set(["job", "jobs", "hiring"])
+    tag_blacklist = set(["job", "jobs", "hiring", "careerarc"])
     run = True
     while run:
         try:
