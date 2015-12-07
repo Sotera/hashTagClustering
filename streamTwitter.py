@@ -39,7 +39,8 @@ def main():
 
     http_method = "GET"
 
-    url = "https://stream.twitter.com/1.1/statuses/filter.json?track=MakeAmericaMoreAmerican&locations=-88.195284,41.562522,-87.507085,42.136065"
+    #url = "https://stream.twitter.com/1.1/statuses/filter.json?track=MakeAmericaMoreAmerican&locations=-88.195284,41.562522,-87.507085,42.136065"
+    url = "https://stream.twitter.com/1.1/statuses/filter.json?locations=-88.195284,41.562522,-87.507085,42.136065"
 
     pars = []
     current_block = datetime.datetime.now()
