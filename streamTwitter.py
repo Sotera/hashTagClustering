@@ -55,11 +55,13 @@ def main():
 
     for line in response:
         now = datetime.datetime.now()
+        print "response at", str(now)
         diff = now - current_block
         if diff.seconds > 180 :
             out_file.close()
             os.rename("raw_tweet_data/live_stream/"+current_string, "raw_tweet_data/"+current_string)
             current_block = now
+            print "\nNew File:", str(current_block)
             current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
             out_file = open("./raw_tweet_data/live_stream/"+current_string,"w")
             #every 2 hours, close existing connection, open under new key to avoid timeout
@@ -72,14 +74,7 @@ def main():
             dic_line = json.loads(line)
             if (dic_line["geo"] is not None or dic_line["coordinates"] is not None) and len(dic_line["entities"]["hashtags"])!=0:
                 out_file.write(line.strip()+"\n")
-            else:
-                print "***"
-                print "Place:\n", dic_line["place"]
-                if dic_line["place"] is not None:
-                    if dic_line["place"]["bounding_box"] is not None:
-                        coords = dic_line["place"]["bounding_box"]["coordinates"][0]
-                        diameter = sqrt((coords[3][0]-coords[0][0])*(coords[3][0]-coords[0][0])+(coords[3][1]-coords[0][1])*(coords[3][1]-coords[0][1]))
-                        print "\tDIAMETER:", diameter
+                print ".",
         except:
             continue
 
