@@ -48,7 +48,7 @@ def main():
     pars = []
     current_block = datetime.datetime.now()
     current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
-    out_file = open("./raw_tweet_data/live_stream/"+current_string,"w")
+    out_file = open("./raw_tweet_data/live_stream/"+current_string, "w", 0)
     response = twitterreq(auth_info[auth_counter][0], auth_info[auth_counter][1], url, http_method, pars)
     response_open_time = datetime.datetime.now()
     print "Response open time: ", str(response_open_time)
@@ -63,7 +63,7 @@ def main():
             current_block = now
             print "\nNew File:", str(current_block)
             current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
-            out_file = open("./raw_tweet_data/live_stream/"+current_string,"w")
+            out_file = open("./raw_tweet_data/live_stream/"+current_string, "w", 0)
             #every 2 hours, close existing connection, open under new key to avoid timeout
             response_up_time = now - response_open_time
             if response_up_time.seconds > 7200:
