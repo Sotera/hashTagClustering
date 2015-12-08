@@ -38,20 +38,20 @@ def twitterreq(oauth_token, oauth_consumer, url, http_method, parameters):
     return response
 
 def main():
+    print "Start Streaming"
     auth_info = getCredentials()
     auth_counter = 0
 
     http_method = "GET"
-
-    #url = "https://stream.twitter.com/1.1/statuses/filter.json?track=MakeAmericaMoreAmerican&locations=-88.195284,41.562522,-87.507085,42.136065"
     url = "https://stream.twitter.com/1.1/statuses/filter.json?stall_warnings=true&locations=-88.195284,41.562522,-87.507085,42.136065"
-
+    print "Using url", url
     pars = []
     current_block = datetime.datetime.now()
     current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
     out_file = open("./raw_tweet_data/live_stream/"+current_string,"w")
     response = twitterreq(auth_info[auth_counter][0], auth_info[auth_counter][1], url, http_method, pars)
     response_open_time = datetime.datetime.now()
+    print "Response open time: ", str(response_open_time)
 
     for line in response:
         now = datetime.datetime.now()
