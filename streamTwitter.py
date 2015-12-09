@@ -39,22 +39,24 @@ def twitterreq(oauth_token, oauth_consumer, url, http_method, parameters):
     return response
 
 def stream_data(response, response_open_time):
+    current_block = datetime.datetime.now()
+    current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
+    out_file = open("./raw_tweet_data/live_stream/"+current_string, "w", 0)
     for line in response:
         now = datetime.datetime.now()
         print "response at", str(now)
         diff = now - current_block
         if diff.seconds > 180 :
             out_file.close()
+            response_up_time = now - response_open_time
+            if response_up_time.seconds > 1800:
+                return
             os.rename("raw_tweet_data/live_stream/"+current_string, "raw_tweet_data/"+current_string)
             current_block = now
             print "\nNew File:", str(current_block)
             current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
             out_file = open("./raw_tweet_data/live_stream/"+current_string, "w", 0)
             #every 2 hours, close existing connection, open under new key to avoid timeout
-            response_up_time = now - response_open_time
-            if response_up_time.seconds > 1800:
-                return
-
         try:
             dic_line = json.loads(line)
             if (dic_line["geo"] is not None or dic_line["coordinates"] is not None) and len(dic_line["entities"]["hashtags"])!=0:
@@ -73,20 +75,18 @@ def main():
     url = "https://stream.twitter.com/1.1/statuses/filter.json?stall_warnings=true&locations=-88.195284,41.562522,-87.507085,42.136065"
     print "Using url", url
     pars = []
-    current_block = datetime.datetime.now()
-    current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
-    out_file = open("./raw_tweet_data/live_stream/"+current_string, "w", 0)
     response = twitterreq(auth_info[auth_counter][0], auth_info[auth_counter][1], url, http_method, pars)
     response_open_time = datetime.datetime.now()
     print "Response open time: ", str(response_open_time)
 
     while True:
         stream_data(response, response_open_time)
-        print "New connection @", str(now)
         response_open_time = datetime.datetime.now()
+        print "New connection @", str(response_open_time)
         response.close()
         auth_counter = (auth_counter+1)%len(auth_info)
         response = twitterreq(auth_info[auth_counter][0], auth_info[auth_counter][1], url, http_method, pars)
+
 
 
 if __name__ == '__main__':
