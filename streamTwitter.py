@@ -1,4 +1,5 @@
 import json
+import sys
 import oauth2 as oauth
 import urllib2 as urllib
 import datetime
@@ -37,6 +38,32 @@ def twitterreq(oauth_token, oauth_consumer, url, http_method, parameters):
     response = opener.open(url, encoded_post_data)
     return response
 
+def stream_data(response, response_open_time):
+    for line in response:
+        now = datetime.datetime.now()
+        print "response at", str(now)
+        diff = now - current_block
+        if diff.seconds > 180 :
+            out_file.close()
+            os.rename("raw_tweet_data/live_stream/"+current_string, "raw_tweet_data/"+current_string)
+            current_block = now
+            print "\nNew File:", str(current_block)
+            current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
+            out_file = open("./raw_tweet_data/live_stream/"+current_string, "w", 0)
+            #every 2 hours, close existing connection, open under new key to avoid timeout
+            response_up_time = now - response_open_time
+            if response_up_time.seconds > 1800:
+                return
+
+        try:
+            dic_line = json.loads(line)
+            if (dic_line["geo"] is not None or dic_line["coordinates"] is not None) and len(dic_line["entities"]["hashtags"])!=0:
+                out_file.write(line.strip()+"\n")
+                print ".",
+        except:
+            print "json load error:", sys.exc_info()[0]
+            continue
+
 def main():
     print "Start Streaming"
     auth_info = getCredentials()
@@ -53,30 +80,14 @@ def main():
     response_open_time = datetime.datetime.now()
     print "Response open time: ", str(response_open_time)
 
-    for line in response:
-        now = datetime.datetime.now()
-        print "response at", str(now)
-        diff = now - current_block
-        if diff.seconds > 180 :
-            out_file.close()
-            os.rename("raw_tweet_data/live_stream/"+current_string, "raw_tweet_data/"+current_string)
-            current_block = now
-            print "\nNew File:", str(current_block)
-            current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
-            out_file = open("./raw_tweet_data/live_stream/"+current_string, "w", 0)
-            #every 2 hours, close existing connection, open under new key to avoid timeout
-            response_up_time = now - response_open_time
-            if response_up_time.seconds > 1800:
-                response.close()
-                auth_counter = (auth_counter+1)%len(auth_info)
-                response = twitterreq(auth_info[auth_counter][0], auth_info[auth_counter][1], url, http_method, pars)
-        try:
-            dic_line = json.loads(line)
-            if (dic_line["geo"] is not None or dic_line["coordinates"] is not None) and len(dic_line["entities"]["hashtags"])!=0:
-                out_file.write(line.strip()+"\n")
-                print ".",
-        except:
-            continue
+    while True:
+        stream_data(response, response_open_time)
+        print "New connection @", str(now)
+        response_open_time = datetime.datetime.now()
+        response.close()
+        auth_counter = (auth_counter+1)%len(auth_info)
+        response = twitterreq(auth_info[auth_counter][0], auth_info[auth_counter][1], url, http_method, pars)
+
 
 if __name__ == '__main__':
     main()
