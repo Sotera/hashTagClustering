@@ -66,7 +66,7 @@ def main():
             out_file = open("./raw_tweet_data/live_stream/"+current_string, "w", 0)
             #every 2 hours, close existing connection, open under new key to avoid timeout
             response_up_time = now - response_open_time
-            if response_up_time.seconds > 7200:
+            if response_up_time.seconds > 1800:
                 response.close()
                 auth_counter = (auth_counter+1)%len(auth_info)
                 response = twitterreq(auth_info[auth_counter][0], auth_info[auth_counter][1], url, http_method, pars)
