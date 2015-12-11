@@ -50,7 +50,7 @@ def stream_data(response, response_open_time):
             out_file.close()
             response_up_time = now - response_open_time
             os.rename("raw_tweet_data/live_stream/"+current_string, "raw_tweet_data/"+current_string)
-            if response_up_time.seconds > 1800:
+            if response_up_time.seconds > 900:
                 return
             current_block = now
             print "\nNew File:", str(current_block)
@@ -72,7 +72,7 @@ def main():
     auth_counter = 0
 
     http_method = "GET"
-    url = "https://stream.twitter.com/1.1/statuses/filter.json?stall_warnings=true&locations=-88.195284,41.562522,-87.507085,42.136065"
+    url = "https://stream.twitter.com/1.1/statuses/filter.json?stall_warnings=true&locations=-91.71,37.58,-80.54,42.92"
     print "Using url", url
     pars = []
     response = twitterreq(auth_info[auth_counter][0], auth_info[auth_counter][1], url, http_method, pars)
