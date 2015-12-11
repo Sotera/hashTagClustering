@@ -46,12 +46,12 @@ def stream_data(response, response_open_time):
         now = datetime.datetime.now()
         print "response at", str(now)
         diff = now - current_block
-        if diff.seconds > 180 :
+        if diff.seconds > 180:
             out_file.close()
             response_up_time = now - response_open_time
+            os.rename("raw_tweet_data/live_stream/"+current_string, "raw_tweet_data/"+current_string)
             if response_up_time.seconds > 1800:
                 return
-            os.rename("raw_tweet_data/live_stream/"+current_string, "raw_tweet_data/"+current_string)
             current_block = now
             print "\nNew File:", str(current_block)
             current_string = str(current_block.date())+"_"+str(current_block.time())+".json"
