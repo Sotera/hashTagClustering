@@ -154,7 +154,7 @@ class ScoreBin:
         for no_clust in filter(lambda x: x.cluster == -1, self.records):
             no_clust.write_to_es(es_doc_index, es_doc_type, es_obj)
 
-        clusters_nums = set(map(lambda x: x.cluster, self.records))
+        clusters_nums = set(map(lambda x: x.cluster, filter(lambda x: x.cluster != -1, self.records)))
         self.n_clusters = len(clusters_nums)
         for num in clusters_nums:
             clustered_recs = sorted(filter(lambda x: x.cluster == num, self.records), key=lambda x: x.dt)
